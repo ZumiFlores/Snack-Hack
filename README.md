@@ -33,6 +33,8 @@ Make sure you have the following installed:
 -Navigate to backend with cd snackhack-backend
 -Install dependencies with npm  install
 -Start the MySQL server and create database named signup with login table
+-Sign up to spoonacular.com
+-Input personal API key into server.js
 -Start backend server with npm start
 
 ### 3. Frontend Setup
