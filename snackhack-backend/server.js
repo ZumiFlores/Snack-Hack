@@ -26,10 +26,10 @@ app.post("/signup", (req, res) => {
   // Generate salt and hash password
   bcrypt.genSalt(10, (err, salt) => {
     if (err) return res.status(500).json({ error: "Salt generation error" });
-    
+
     bcrypt.hash(password, salt, (err, hashedPassword) => {
       if (err) return res.status(500).json({ error: "Password hashing error" });
-      
+
       const sql = "INSERT INTO login (`name`, `email`, `password`) VALUES (?, ?, ?)";
       db.query(sql, [name, email, hashedPassword], (err, data) => {
         if (err) {
@@ -43,7 +43,7 @@ app.post("/signup", (req, res) => {
 
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
-  
+
   const sql = "SELECT * FROM login WHERE `email` = ?";
   db.query(sql, [email], async (err, data) => {
     if (err) {
@@ -107,6 +107,53 @@ app.get("/recipes/:id", async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch recipe details" });
   }
+});
+
+app.post("/favorites", (req, res) => {
+  const { userId, recipeId, title, image } = req.body;
+
+  if (!userId || !recipeId || !title) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const sql = "INSERT INTO favorites (`user_id`, `recipe_id`, `title`, `image`) VALUES (?)";
+  const values = [userId, recipeId, title, image];
+
+  db.query(sql, [values], (err) => {
+    if (err) {
+      console.error("Error saving favorite:", err);
+      return res.status(500).json({ error: "Failed to save favorite recipe" });
+    }
+    res.status(200).json({ message: "Favorite saved successfully" });
+  });
+});
+
+// Retrieve all favorites for a user
+app.get("/favorites/:userId", (req, res) => {
+  const { userId } = req.params;
+
+  const sql = "SELECT * FROM favorites WHERE user_id = ?";
+  db.query(sql, [userId], (err, data) => {
+    if (err) {
+      console.error("Error fetching favorites:", err);
+      return res.status(500).json({ error: "Failed to fetch favorites" });
+    }
+    res.status(200).json(data);
+  });
+});
+
+// Remove a favorite recipe
+app.delete("/favorites/:userId/:recipeId", (req, res) => {
+  const { userId, recipeId } = req.params;
+
+  const sql = "DELETE FROM favorites WHERE user_id = ? AND recipe_id = ?";
+  db.query(sql, [userId, recipeId], (err) => {
+    if (err) {
+      console.error("Error removing favorite:", err);
+      return res.status(500).json({ error: "Failed to remove favorite recipe" });
+    }
+    res.status(200).json({ message: "Favorite removed successfully" });
+  });
 });
 
 app.listen(8081, () => {

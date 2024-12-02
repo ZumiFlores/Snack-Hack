@@ -14,15 +14,29 @@ function Home() {
   const navigate = useNavigate(); // To navigate after logout
   const scrollPositionRef = useRef(0);
 
+  // useEffect(() => {
+  //   const fetchFavorites = async () => {
+  //     try {
+  //       const userId = 1; // Replace with logged-in user ID
+  //       const response = await axios.get(`http://localhost:8081/favorites/${userId}`);
+  //       setFavorites(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching favorites:", error);
+  //       setError("Failed to load favorites. Please try again.");
+  //     }
+  //   };
+
+  //   fetchFavorites();
+  // }, []);
+
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
-        const userId = 1; // Replace with logged-in user ID
+        const userId = 1; // Replace with the logged-in user's ID
         const response = await axios.get(`http://localhost:8081/favorites/${userId}`);
         setFavorites(response.data);
       } catch (error) {
         console.error("Error fetching favorites:", error);
-        setError("Failed to load favorites. Please try again.");
       }
     };
 
@@ -70,17 +84,51 @@ function Home() {
     }
   };
 
-  const handleFavorite = (recipe) => {
-    if (favorites.some((fav) => fav.id === recipe.id)) {
-      setFavorites(favorites.filter((fav) => fav.id !== recipe.id));
+  // const handleFavorite = (recipe) => {
+  //   if (favorites.some((fav) => fav.id === recipe.id)) {
+  //     setFavorites(favorites.filter((fav) => fav.id !== recipe.id));
+  //   } else {
+  //     setFavorites([...favorites, recipe]);
+  //   }
+  // };
+  const handleFavorite = async (recipe) => {
+    const userId = 1; // Replace with the logged-in user's ID
+
+    if (favorites.some((fav) => fav.recipe_id === recipe.id)) {
+      // Remove favorite
+      try {
+        await axios.delete(`http://localhost:8081/favorites/${userId}/${recipe.id}`);
+        setFavorites(favorites.filter((fav) => fav.recipe_id !== recipe.id));
+      } catch (error) {
+        console.error("Error removing favorite:", error);
+      }
     } else {
-      setFavorites([...favorites, recipe]);
+      // Add to favorites
+      try {
+        const newFavorite = {
+          userId,
+          recipeId: recipe.id,
+          title: recipe.title,
+          image: recipe.image,
+        };
+        await axios.post("http://localhost:8081/favorites", newFavorite);
+        setFavorites([...favorites, { ...newFavorite, recipe_id: recipe.id }]);
+      } catch (error) {
+        console.error("Error saving favorite:", error);
+      }
     }
   };
 
+  // const toggleViewFavorites = () => {
+  //   scrollPositionRef.current = window.scrollY;
+  //   setViewFavorites(!viewFavorites);
+  //   setTimeout(() => window.scrollTo(0, scrollPositionRef.current), 0);
+  // };
   const toggleViewFavorites = () => {
+    // Save current scroll position before switching views
     scrollPositionRef.current = window.scrollY;
     setViewFavorites(!viewFavorites);
+    // Scroll back to the saved position when returning
     setTimeout(() => window.scrollTo(0, scrollPositionRef.current), 0);
   };
 
@@ -122,20 +170,22 @@ function Home() {
             {error && <p className="text-danger mt-3">{error}</p>}
             <ul className="recipe-list">
               {(viewFavorites ? favorites : recipes).map((recipe) => (
-                <li key={recipe.id} className="recipe-item">
+                <li key={recipe.id || recipe.recipe_id} className="recipe-item">
                   <div className="recipe-card">
-                    <a href={`/recipes/${recipe.id}`} className="recipe-link">
+                    <a href={`/recipes/${recipe.id || recipe.recipe_id}`} className="recipe-link">
                       <img src={recipe.image} alt={recipe.title} className="recipe-image-small" />
                     </a>
                     <div className="recipe-info">
-                      <a href={`/recipes/${recipe.id}`} className="recipe-link">
+                      <a href={`/recipes/${recipe.id || recipe.recipe_id}`} className="recipe-link">
                         <h5>{recipe.title}</h5>
                       </a>
                       <button
-                        className={`favorite-btn ${favorites.some((fav) => fav.id === recipe.id) ? "favorited" : ""}`}
+                        className={`favorite-btn ${
+                          favorites.some((fav) => fav.recipe_id === recipe.id) ? "favorited" : ""
+                        }`}
                         onClick={() => handleFavorite(recipe)}
                       >
-                        {favorites.some((fav) => fav.id === recipe.id) ? "❤️" : "🤍"}
+                        {favorites.some((fav) => fav.recipe_id === recipe.id) ? "❤️" : "🤍"}
                       </button>
                     </div>
                   </div>
