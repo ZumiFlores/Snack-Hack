@@ -11,6 +11,7 @@
 SnackHack is a web application where users can sign up, log in, and interact with recipe creations. This helps students and groups of people reduce food waste by generating recipes with available ingredients inputted.
 SnackHack's sign up and log in page comes from https://youtu.be/F53MPHqOmYI?si=ijYkbFI53usAxJHV.
 SnackHack's search functionality comes from https://www.youtube.com/watch?v=DcEzcPmyFC4.
+The password's hashing comes from https://www.youtube.com/watch?v=AzA_LTDoFqY.
 
 ## Technologies Used
 - **Frontend**: React, Axios, React Router
