@@ -2,6 +2,7 @@ const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
 const axios = require("axios");
+const bcrypt = require("bcrypt");
 
 //recipe search from https://www.youtube.com/watch?v=DcEzcPmyFC4
 
@@ -18,32 +19,55 @@ const db = mysql.createConnection({
   database: "signup",
 });
 
+
 app.post("/signup", (req, res) => {
-  const sql = "INSERT INTO login (`name`, `email`, `password`) VALUES (?)";
-  const values = [req.body.name, req.body.email, req.body.password];
-  db.query(sql, [values], (err, data) => {
-    if (err) {
-      return res.status(500).json({ error: "Database error" });
-    }
-    res.status(200).json({ message: "Signup successful" });
+  const { name, email, password } = req.body;
+
+  // Generate salt and hash password
+  bcrypt.genSalt(10, (err, salt) => {
+    if (err) return res.status(500).json({ error: "Salt generation error" });
+    
+    bcrypt.hash(password, salt, (err, hashedPassword) => {
+      if (err) return res.status(500).json({ error: "Password hashing error" });
+      
+      const sql = "INSERT INTO login (`name`, `email`, `password`) VALUES (?, ?, ?)";
+      db.query(sql, [name, email, hashedPassword], (err, data) => {
+        if (err) {
+          return res.status(500).json({ error: "Database error" });
+        }
+        res.status(200).json({ message: "Signup successful" });
+      });
+    });
   });
 });
 
 app.post("/login", (req, res) => {
-    const sql = "SELECT * FROM login WHERE `email` = ? AND `password` = ?";
-    db.query(sql, [req.body.email, req.body.password], (err, data) => {
-      if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ message: "Database error" });
-      }
-      if (data.length > 0) {
+  const { email, password } = req.body;
+  
+  const sql = "SELECT * FROM login WHERE `email` = ?";
+  db.query(sql, [email], async (err, data) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (data.length === 0) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    try {
+      const match = await bcrypt.compare(password, data[0].password);
+      if (match) {
         return res.status(200).json({ message: "Login successful" });
       } else {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid password" });
       }
-    });
+    } catch (error) {
+      console.error("Password comparison error:", error);
+      return res.status(500).json({ message: "Authentication error" });
+    }
   });
-
+});
 
   app.post("/search", async (req, res) => {
     try {
