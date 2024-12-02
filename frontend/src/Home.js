@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // For navigation
 import axios from "axios";
 import "./Home.css";
 
@@ -10,39 +11,41 @@ function Home() {
   const [error, setError] = useState(null);
   const [viewFavorites, setViewFavorites] = useState(false);
 
-  // Ref to save scroll position
+  const navigate = useNavigate(); // To navigate after logout
   const scrollPositionRef = useRef(0);
 
-  // Load favorites and ingredients from localStorage on initial render
   useEffect(() => {
-    const storedFavorites = JSON.parse(localStorage.getItem("favorites")) || [];
-    const storedIngredients = JSON.parse(localStorage.getItem("ingredients")) || [];
-    setFavorites(storedFavorites);
-    setIngredients(storedIngredients);
+    const fetchFavorites = async () => {
+      try {
+        const userId = 1; // Replace with logged-in user ID
+        const response = await axios.get(`http://localhost:8081/favorites/${userId}`);
+        setFavorites(response.data);
+      } catch (error) {
+        console.error("Error fetching favorites:", error);
+        setError("Failed to load favorites. Please try again.");
+      }
+    };
+
+    fetchFavorites();
   }, []);
 
-  // Save favorites and ingredients to localStorage whenever they are updated
-  useEffect(() => {
-    localStorage.setItem("favorites", JSON.stringify(favorites));
-    localStorage.setItem("ingredients", JSON.stringify(ingredients));
-  }, [favorites, ingredients]);
-
-  const handleInput = (e) => {
-    setQuery(e.target.value);
+  const handleLogout = () => {
+    // Clear session data (if stored in localStorage or cookies)
+    localStorage.clear();
+    console.log("User logged out");
+    navigate("/"); // Redirect to login page
   };
+
+  const handleInput = (e) => setQuery(e.target.value);
 
   const handleAddIngredient = (e) => {
     if (e.key === "Enter" && query.trim()) {
       e.preventDefault();
       if (!ingredients.includes(query.trim())) {
         setIngredients([...ingredients, query.trim()]);
-        setQuery(""); // Clear input after adding
+        setQuery("");
       }
     }
-  };
-
-  const handleRemoveIngredient = (ingredient) => {
-    setIngredients(ingredients.filter((item) => item !== ingredient));
   };
 
   const handleSearch = async (e) => {
@@ -69,23 +72,30 @@ function Home() {
 
   const handleFavorite = (recipe) => {
     if (favorites.some((fav) => fav.id === recipe.id)) {
-      setFavorites(favorites.filter((fav) => fav.id !== recipe.id)); // Remove from favorites
+      setFavorites(favorites.filter((fav) => fav.id !== recipe.id));
     } else {
-      setFavorites([...favorites, recipe]); // Add to favorites
+      setFavorites([...favorites, recipe]);
     }
   };
 
   const toggleViewFavorites = () => {
-    // Save current scroll position before switching views
     scrollPositionRef.current = window.scrollY;
     setViewFavorites(!viewFavorites);
-    // Scroll back to the saved position when returning
     setTimeout(() => window.scrollTo(0, scrollPositionRef.current), 0);
   };
 
   return (
     <div style={{ backgroundColor: "#F0FFF0" }} className="d-flex justify-content-center align-items-center vh-100">
       <div className="bg-white p-3 rounded d-flex flex-column w-75">
+        {/* Logout Button */}
+        <button
+          className="btn btn-danger btn-sm"
+          style={{ position: "absolute", top: "10px", right: "10px" }}
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center">
           {viewFavorites ? (
@@ -152,7 +162,7 @@ function Home() {
                     <span
                       key={index}
                       className="ingredient-bubble"
-                      onClick={() => handleRemoveIngredient(ingredient)}
+                      onClick={() => setIngredients(ingredients.filter((item) => item !== ingredient))}
                     >
                       {ingredient} ✖
                     </span>
