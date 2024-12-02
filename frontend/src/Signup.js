@@ -17,22 +17,35 @@ function Signup() {
     const [errors, setErrors] = useState({})
 
 
-    const handleInput = (event) => {
-        setValues(prev => ({...prev, [event.target.name]: [event.target.value]}))
-    }
+const handleInput = (event) => {
+    // Fix the value assignment
+    setValues(prev => ({
+        ...prev, 
+        [event.target.name]: event.target.value  // Remove the array brackets
+    }))
+}
 
-
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        setErrors(Validation(values))
-        if(errors.name === "" && errors.email === "" && errors.password === ""){
-            axios.post('http://localhost:8081/signup', values)
-            .then(res => {
-                navigate('/');
-            })
-            .catch(error => console.log(error));
+const handleSubmit = async (event) => {
+    event.preventDefault();
+    try {
+        const response = await axios.post('http://localhost:8081/signup', values, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.status === 200) {
+          navigate('/');
         }
-    }
+      } catch (error) {
+        if (error.response) {
+          alert(error.response.data.message);
+        } else {
+          alert('Network error occurred');
+        }
+        console.error('Full error:', error);
+      }
+}
+
   return (
     <div style={{ backgroundColor: '#F0FFF0' }} className="d-flex justify-content-center align-items-center vh-100">
         <div className="bg-white p-3 rounded w-25">

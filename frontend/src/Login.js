@@ -20,19 +20,19 @@ function Login() {
     event.preventDefault();
     const validationErrors = Validation(values);
     setErrors(validationErrors);
-
-    if (!validationErrors.email && !validationErrors.password) {
+    
+    if (Object.keys(validationErrors).length === 0) {
       try {
-        const res = await axios.post("http://localhost:8081/login", values);
-        console.log(res.data);
-        if (res.data.message === "Login successful") {
+        console.log("Submitting values:", values.email); 
+        const response = await axios.post("http://localhost:8081/login", values);
+        console.log("Login response:", response.data); 
+        
+        if (response.data.message === "Login successful") {
           navigate("/home");
-        } else {
-          alert("Invalid email or password");
         }
       } catch (error) {
-        console.error("Error during login:", error);
-        alert("Login failed. Please try again later.");
+        console.error("Login error:", error.response?.data);
+        alert(error.response?.data?.message || "Login failed");
       }
     }
   };
