@@ -51,23 +51,38 @@ app.post("/login", (req, res) => {
       return res.status(500).json({ message: "Database error" });
     }
 
+    console.log("Database query result:", data); //Debugging
+
     if (data.length === 0) {
+      console.log("User not found for email:", email); //Debugging
       return res.status(401).json({ message: "User not found" });
     }
 
     try {
       const match = await bcrypt.compare(password, data[0].password);
+
       if (match) {
-        return res.status(200).json({ message: "Login successful" });
+        console.log("Login successful for user_id:", data[0].user_id);
+        return res.status(200).json({
+          message: "Login successful",
+          user_id: data[0].user_id,
+        });
       } else {
+        console.log("Invalid password for email:", email); //Debugging
         return res.status(401).json({ message: "Invalid password" });
       }
     } catch (error) {
-      console.error("Password comparison error:", error);
+      console.error("Authentication error:", error);
       return res.status(500).json({ message: "Authentication error" });
     }
   });
 });
+
+
+
+
+
+
 
   app.post("/search", async (req, res) => {
     try {
@@ -112,21 +127,27 @@ app.get("/recipes/:id", async (req, res) => {
 app.post("/favorites", (req, res) => {
   const { userId, recipeId, title, image } = req.body;
 
-  if (!userId || !recipeId || !title) {
+  console.log("Received data:", req.body); // Debugging log
+
+  if (!userId || !recipeId || !title || !image) {
+    console.error("Missing fields:", req.body); // Debugging log
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const sql = "INSERT INTO favorites (`user_id`, `recipe_id`, `title`, `image`) VALUES (?)";
+  const sql = "INSERT INTO favorites (user_id, recipe_id, title, image) VALUES (?, ?, ?, ?)";
   const values = [userId, recipeId, title, image];
 
-  db.query(sql, [values], (err) => {
+  db.query(sql, values, (err) => {
     if (err) {
       console.error("Error saving favorite:", err);
-      return res.status(500).json({ error: "Failed to save favorite recipe" });
+      return res.status(500).json({ error: "Failed to save favorite" });
     }
-    res.status(200).json({ message: "Favorite saved successfully" });
+    res.status(200).json({ message: "Favorite added successfully" });
   });
 });
+
+
+
 
 // Retrieve all favorites for a user
 app.get("/favorites/:userId", (req, res) => {

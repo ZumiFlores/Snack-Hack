@@ -20,15 +20,25 @@ function Login() {
     event.preventDefault();
     const validationErrors = Validation(values);
     setErrors(validationErrors);
-    
+
     if (Object.keys(validationErrors).length === 0) {
       try {
-        console.log("Submitting values:", values.email); 
+        console.log("Submitting values:", values.email);
         const response = await axios.post("http://localhost:8081/login", values);
-        console.log("Login response:", response.data); 
-        
+        console.log("Login response:", response.data);
+
         if (response.data.message === "Login successful") {
-          navigate("/home");
+          if (response.data.user_id) {
+            localStorage.setItem("user_id", response.data.user_id);
+            console.log("Stored user_id:", response.data.user_id); //Debugging
+            navigate("/home");
+          } else {
+            console.error("Login response missing user_id:", response.data);
+            alert("Login successful, but user ID is missing. Please try again.");
+          }
+        } else {
+          console.error("Unexpected login response:", response.data);
+          alert("Unexpected response. Please try again.");
         }
       } catch (error) {
         console.error("Login error:", error.response?.data);
@@ -36,6 +46,8 @@ function Login() {
       }
     }
   };
+
+
 
   return (
     <div style={{ backgroundColor: "#F0FFF0" }} className="d-flex justify-content-center align-items-center vh-100">

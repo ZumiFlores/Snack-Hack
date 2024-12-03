@@ -11,7 +11,7 @@ function Home() {
   const [error, setError] = useState(null);
   const [viewFavorites, setViewFavorites] = useState(false);
 
-  const navigate = useNavigate(); // To navigate after logout
+  const navigate = useNavigate();
   const scrollPositionRef = useRef(0);
 
   // useEffect(() => {
@@ -31,23 +31,31 @@ function Home() {
 
   useEffect(() => {
     const fetchFavorites = async () => {
+      const userId = localStorage.getItem("user_id");
+
+      if (!userId) {
+        console.error("User ID not found in local storage");
+        return;
+      }
+
       try {
-        const userId = 1; // Replace with the logged-in user's ID
         const response = await axios.get(`http://localhost:8081/favorites/${userId}`);
-        setFavorites(response.data);
+        setFavorites(response.data); // Update state with user-specific favorites
       } catch (error) {
         console.error("Error fetching favorites:", error);
+        setError("Failed to load favorites. Please try again.");
       }
     };
 
     fetchFavorites();
   }, []);
 
+
+
   const handleLogout = () => {
-    // Clear session data (if stored in localStorage or cookies)
     localStorage.clear();
     console.log("User logged out");
-    navigate("/"); // Redirect to login page
+    navigate("/"); // Login page
   };
 
   const handleInput = (e) => setQuery(e.target.value);
@@ -92,32 +100,29 @@ function Home() {
   //   }
   // };
   const handleFavorite = async (recipe) => {
-    const userId = 1; // Replace with the logged-in user's ID
+    const userId = localStorage.getItem("user_id");
 
-    if (favorites.some((fav) => fav.recipe_id === recipe.id)) {
-      // Remove favorite
-      try {
+    if (!userId) {
+      console.error("User ID not found in local storage");
+      return;
+    }
+
+    console.log("User ID being sent to the backend:", userId); //Debugging
+
+    try {
+      if (favorites.some((fav) => fav.recipe_id === recipe.id)) {
         await axios.delete(`http://localhost:8081/favorites/${userId}/${recipe.id}`);
         setFavorites(favorites.filter((fav) => fav.recipe_id !== recipe.id));
-      } catch (error) {
-        console.error("Error removing favorite:", error);
-      }
-    } else {
-      // Add to favorites
-      try {
-        const newFavorite = {
-          userId,
-          recipeId: recipe.id,
-          title: recipe.title,
-          image: recipe.image,
-        };
+      } else {
+        const newFavorite = { userId, recipeId: recipe.id, title: recipe.title, image: recipe.image };
         await axios.post("http://localhost:8081/favorites", newFavorite);
         setFavorites([...favorites, { ...newFavorite, recipe_id: recipe.id }]);
-      } catch (error) {
-        console.error("Error saving favorite:", error);
       }
+    } catch (error) {
+      console.error("Error updating favorite:", error);
     }
   };
+
 
   // const toggleViewFavorites = () => {
   //   scrollPositionRef.current = window.scrollY;
